@@ -8,6 +8,9 @@ import typer
 from rich.console import Console
 
 from ood.config import Settings, load_settings
+from ood.incident import route_operational_incident
+from ood.incident_synthesis import build_incident_solution_proposal
+from ood.learning import create_knowledge_update_proposal, record_actual_resolution, record_feedback
 from ood.mock_corpus import MockCorpusResult, generate_mock_corpus
 from ood.mock_validation import MockValidationResult, validate_mock_corpus
 from ood.models import IndexMissingError, IndexResult, IndexStatus, QueryResult, UpdateResult
@@ -303,6 +306,60 @@ def _emit_quality_audit_result(
         typer.echo(f"Report written: {report_path}")
 
 
+def _parse_bool(value: str | bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    normalized = value.strip().lower()
+    if normalized in {"true", "1", "yes", "ja", "y"}:
+        return True
+    if normalized in {"false", "0", "no", "nein", "n"}:
+        return False
+    raise typer.BadParameter("Expected true or false")
+
+
+def _feedback_prompt(suggestion_id: str) -> str:
+    return (
+        f"Bewerte diesen Vorschlag mit: ood feedback {suggestion_id} --solved true|false "
+        "--useful 1-5 --correct 1-5 --routing-correct true|false"
+    )
+
+
+def _emit_incident_result(*, routing: object, proposal: object | None, feedback: dict[str, str], json_output: bool, quiet: bool) -> None:
+    routing_payload = routing.to_dict()  # type: ignore[attr-defined]
+    proposal_payload = proposal.to_dict() if proposal is not None else None  # type: ignore[attr-defined]
+    payload = {"command": "incident", "routing": routing_payload, "proposal": proposal_payload, "feedback": feedback}
+    if json_output:
+        typer.echo(json.dumps(payload, ensure_ascii=False))
+        return
+    if quiet:
+        return
+    typer.echo("Weiterleitung:")
+    if routing_payload["should_forward"]:
+        typer.echo(f"Zielteam: {routing_payload['target_team']}")
+        typer.echo(str(routing_payload["route_reason"]))
+        calendar = routing_payload.get("duty_calendar")
+        if calendar:
+            typer.echo(f"Kalender: {calendar['url']}")
+        return
+    typer.echo("Keine Weiterleitung; OOD bearbeitet weiter.")
+    typer.echo("Lösungsvorschlag:")
+    if proposal_payload and proposal_payload.get("proposal"):
+        typer.echo(str(proposal_payload["proposal"]))
+    else:
+        typer.echo("Kein belastbarer Vorschlag verfügbar.")
+    typer.echo("Quellen:")
+    for citation in (proposal_payload or {}).get("citations", []):
+        typer.echo(f"- {citation['path']} (score={citation['score']}) — {citation['excerpt']}")
+    typer.echo("Risiken:")
+    for risk in (proposal_payload or {}).get("analysis", {}).get("command_risks", []):
+        typer.echo(f"- {risk['risk']} | {risk['command']} | {risk['origin']} | {risk['rationale']}")
+    typer.echo("Unsicherheiten:")
+    for uncertainty in (proposal_payload or {}).get("uncertainties", []):
+        typer.echo(f"- {uncertainty}")
+    typer.echo("Feedback")
+    typer.echo(feedback["prompt"])
+
+
 def _handle_error(error: Exception, *, verbose: bool) -> None:
     if verbose:
         raise error
@@ -506,6 +563,108 @@ def quality_audit(
         verbose=verbose,
         quiet=quiet,
     )
+
+
+@app.command("incident")
+def incident(
+    ticket_text: str,
+    json_output: JsonOption = False,
+    verbose: VerboseOption = False,
+    quiet: QuietOption = False,
+    knowledge_dir: KnowledgeDirOption = None,
+    data_dir: DataDirOption = None,
+    storage_dir: StorageDirOption = None,
+) -> None:
+    """Route an operational incident first, then query RAG only when OOD should solve it."""
+
+    try:
+        settings = _load_valid_settings(knowledge_dir=knowledge_dir, data_dir=data_dir, storage_dir=storage_dir, verbose=verbose, quiet=quiet)
+        routing = route_operational_incident(ticket_text)
+        if not routing.continue_to_solution:
+            _emit_incident_result(routing=routing, proposal=None, feedback={}, json_output=json_output, quiet=quiet)
+            return
+        result = RagEngine(settings).query(ticket_text)
+        proposal = build_incident_solution_proposal(result, settings)
+    except IndexMissingError as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(code=1) from error
+    except Exception as error:
+        _handle_error(error, verbose=verbose)
+    _emit_incident_result(
+        routing=routing,
+        proposal=proposal,
+        feedback={"prompt": _feedback_prompt(proposal.suggestion_id)},
+        json_output=json_output,
+        quiet=quiet,
+    )
+
+
+@app.command("feedback")
+def feedback(
+    suggestion_id: str,
+    solved: Annotated[str, typer.Option("--solved", help="Whether the suggestion solved the incident (true/false).")],
+    useful: Annotated[int, typer.Option("--useful", help="Usefulness rating 1-5.")],
+    correct: Annotated[int, typer.Option("--correct", help="Correctness rating 1-5.")],
+    routing_correct: Annotated[str, typer.Option("--routing-correct", help="Whether routing was correct (true/false).")],
+    missing_evidence: Annotated[str | None, typer.Option("--missing-evidence", help="Missing evidence note.")] = None,
+    data_dir: DataDirOption = None,
+    json_output: JsonOption = False,
+    quiet: QuietOption = False,
+) -> None:
+    """Record immediate quality feedback for an incident suggestion."""
+
+    settings = _load_valid_settings(data_dir=data_dir, quiet=quiet)
+    path = record_feedback(
+        data_dir=settings.data_dir,
+        suggestion_id=suggestion_id,
+        solved=_parse_bool(solved),
+        useful=useful,
+        correct=correct,
+        routing_correct=_parse_bool(routing_correct),
+        missing_evidence=missing_evidence,
+    )
+    if json_output:
+        typer.echo(json.dumps({"command": "feedback", "path": str(path)}, ensure_ascii=False))
+    elif not quiet:
+        typer.echo(f"Feedback gespeichert: {path}")
+
+
+@app.command("resolution")
+def resolution(
+    suggestion_id: str,
+    resolution_text: Annotated[str, typer.Option("--resolution-text", help="Actual resolution text.")],
+    resolver: Annotated[str | None, typer.Option("--resolver", help="Resolver name.")] = None,
+    source_ticket: Annotated[str | None, typer.Option("--source-ticket", help="Source ticket reference.")] = None,
+    data_dir: DataDirOption = None,
+    json_output: JsonOption = False,
+    quiet: QuietOption = False,
+) -> None:
+    """Record the actual later resolution for a suggestion."""
+
+    settings = _load_valid_settings(data_dir=data_dir, quiet=quiet)
+    path = record_actual_resolution(data_dir=settings.data_dir, suggestion_id=suggestion_id, resolution_text=resolution_text, resolver=resolver, source_ticket=source_ticket)
+    if json_output:
+        typer.echo(json.dumps({"command": "resolution", "path": str(path)}, ensure_ascii=False))
+    elif not quiet:
+        typer.echo(f"Ist-Lösung gespeichert: {path}")
+
+
+@app.command("knowledge-proposal")
+def knowledge_proposal(
+    suggestion_id: str,
+    data_dir: DataDirOption = None,
+    json_output: JsonOption = False,
+    quiet: QuietOption = False,
+) -> None:
+    """Create a pending knowledge-update proposal from feedback and resolution artifacts."""
+
+    settings = _load_valid_settings(data_dir=data_dir, quiet=quiet)
+    path = create_knowledge_update_proposal(data_dir=settings.data_dir, suggestion_id=suggestion_id)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if json_output:
+        typer.echo(json.dumps({"command": "knowledge-proposal", "path": str(path), "proposal": payload}, ensure_ascii=False))
+    elif not quiet:
+        typer.echo(f"Knowledge-Vorschlag erstellt: {path}")
 
 
 __all__ = ["app"]
