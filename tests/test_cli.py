@@ -49,6 +49,100 @@ def test_help_lists_flat_commands() -> None:
     assert "reindex" in result.output
     assert "mock-init" in result.output
     assert "mock-validate" in result.output
+    assert "incident" in result.output
+    assert "feedback" in result.output
+    assert "resolution" in result.output
+    assert "knowledge-proposal" in result.output
+
+
+def test_incident_forwarded_pkv_json_does_not_query_rag(monkeypatch) -> None:
+    def fail_query(self, ticket_text: str):  # pragma: no cover - must not run
+        raise AssertionError("RagEngine.query must not run for forwarded incidents")
+
+    monkeypatch.setattr("ood.cli.RagEngine.query", fail_query)
+
+    result = runner.invoke(app, ["incident", "Police 15.456.789 Fehler", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["command"] == "incident"
+    assert payload["routing"]["should_forward"] is True
+    assert payload["routing"]["target_team"] == "PKV"
+    assert payload["proposal"] is None
+
+
+def test_incident_non_forwarded_queries_rag_and_returns_feedback(monkeypatch) -> None:
+    def fake_query(self, ticket_text: str):
+        return QueryResult(
+            query=ticket_text,
+            answer="Kafka Offset neu lesen.",
+            confidence=ConfidenceScore(score=0.8, rationale="Gute Treffer"),
+            sources=[SourceHit(path="kb/kafka.md", score=0.9, excerpt="Offset neu lesen")],
+            llm_used=False,
+            status="success",
+            analysis=_ticket_analysis(),
+        )
+
+    monkeypatch.setattr("ood.cli.RagEngine.query", fake_query)
+
+    result = runner.invoke(app, ["incident", "Police 4.005.001.234 Kafka Fehler", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["routing"]["continue_to_solution"] is True
+    assert payload["proposal"]["suggestion_id"]
+    assert payload["proposal"]["citations"][0]["path"] == "kb/kafka.md"
+    assert "ood feedback" in payload["feedback"]["prompt"]
+
+
+def test_incident_human_output_includes_feedback(monkeypatch) -> None:
+    def fake_query(self, ticket_text: str):
+        return QueryResult(
+            query=ticket_text,
+            answer="Kafka Offset neu lesen.",
+            confidence=ConfidenceScore(score=0.8, rationale="Gute Treffer"),
+            sources=[SourceHit(path="kb/kafka.md", score=0.9, excerpt="Offset neu lesen")],
+            llm_used=False,
+            status="success",
+            analysis=_ticket_analysis(),
+        )
+
+    monkeypatch.setattr("ood.cli.RagEngine.query", fake_query)
+
+    result = runner.invoke(app, ["incident", "Police 4.005.001.234 Kafka Fehler"])
+
+    assert result.exit_code == 0
+    assert "Feedback" in result.output
+
+
+def test_incident_index_missing_maps_to_exit_code(monkeypatch) -> None:
+    from ood.models import IndexMissingError
+
+    def fake_query(self, ticket_text: str):
+        raise IndexMissingError("Index fehlt")
+
+    monkeypatch.setattr("ood.cli.RagEngine.query", fake_query)
+
+    result = runner.invoke(app, ["incident", "Police 4.005.001.234 Fehler"])
+
+    assert result.exit_code == 1
+    assert "Index fehlt" in result.output
+
+
+
+def test_feedback_resolution_and_proposal_commands_write_artifacts(tmp_path: Path) -> None:
+    feedback = runner.invoke(app, ["feedback", "abc123", "--solved", "true", "--useful", "5", "--correct", "4", "--routing-correct", "true", "--missing-evidence", "", "--data-dir", str(tmp_path)])
+    resolution = runner.invoke(app, ["resolution", "abc123", "--resolution-text", "Kafka Offset neu gelesen", "--resolver", "Timo", "--source-ticket", "INC001", "--data-dir", str(tmp_path)])
+    proposal = runner.invoke(app, ["knowledge-proposal", "abc123", "--data-dir", str(tmp_path), "--json"])
+
+    assert feedback.exit_code == 0
+    assert resolution.exit_code == 0
+    assert proposal.exit_code == 0
+    assert (tmp_path / "feedback" / "abc123.feedback.json").exists()
+    assert (tmp_path / "resolutions" / "abc123.resolution.json").exists()
+    assert (tmp_path / "knowledge-proposals" / "abc123.proposal.json").exists()
+    payload = json.loads(proposal.output)
+    assert payload["proposal"]["review_status"] == "pending"
 
 
 def test_query_requires_ticket_text() -> None:
