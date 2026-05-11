@@ -33,7 +33,7 @@
 
 ### v1.2 Operational Skill and Learning Loop
 
-- [ ] **Phase 16: RAG-Backed OOD Skill, LLM Synthesis, and Learning Loop** - User can use an installable OOD incident skill backed by the Python RAG script, privacy-gated LLM synthesis, deterministic forwarding/calendar hand-off, immediate quality feedback, and asynchronous resolution capture
+- [x] **Phase 16: RAG-Backed OOD Skill, LLM Synthesis, and Learning Loop** - User can use an installable OOD incident skill backed by the Python RAG script, privacy-gated LLM synthesis, deterministic forwarding/calendar hand-off, immediate quality feedback, and asynchronous resolution capture (completed 2026-05-11)
 
 ## Phase Details
 
@@ -258,7 +258,7 @@ Plans:
 | 13. Evaluation Service and CLI Reporting | 3/3 | Complete    | 2026-05-11 |
 | 14. Baseline, Feedback Loop, and Review Gate | 3/3 | Complete    | 2026-05-11 |
 | 15. Local Graph-/Metadata Retrieval and Data Quality Review | 5/5 | Complete   | 2026-05-08 |
-| 16. RAG-Backed OOD Skill, LLM Synthesis, and Learning Loop | 0/TBD | Planned | - |
+| 16. RAG-Backed OOD Skill, LLM Synthesis, and Learning Loop | 5/5 | Complete   | 2026-05-11 |
 
 ---
 
@@ -424,7 +424,7 @@ Plans:
 **Goal:** User can operate OOD support through a multi-level skill that uses the Python RAG script as source of truth, handles forwarding and duty calendars before solution work, produces privacy-gated LLM-backed proposals, and learns from immediate plus asynchronous resolution feedback.
 **Requirements**: SKILL-01, SKILL-02, LLM-02, ROUTE-01, FB-02, LEARN-02, KNW-13
 **Depends on:** Phase 15
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 
 **Success Criteria** (what must be TRUE):
   1. An installable skill generated from the existing `06_OOD-KB/ood-agent` template calls the project RAG CLI/script for retrieval instead of manually reading `_index.md` as the canonical search path.
@@ -440,11 +440,11 @@ Plans:
   3. Treat learning artifacts as review-gated knowledge proposals, not automatic trusted truth, so bad feedback cannot silently poison the KB.
 
 Plans:
-- [ ] 16-01-PLAN.md — Create deterministic operational routing/calendar hand-off contracts before RAG/LLM synthesis
-- [ ] 16-02-PLAN.md — Package the installable RAG-backed OOD incident skill and operator guide from the existing template
-- [ ] 16-03-PLAN.md — Add privacy-gated grounded solution proposal synthesis over QueryResult
-- [ ] 16-04-PLAN.md — Add immediate feedback, actual-resolution, and pending knowledge-proposal artifact helpers
-- [ ] 16-05-PLAN.md — Wire the route-first incident CLI plus feedback/resolution/proposal commands and workflow docs
+- [x] 16-01-PLAN.md — Create deterministic operational routing/calendar hand-off contracts before RAG/LLM synthesis
+- [x] 16-02-PLAN.md — Package the installable RAG-backed OOD incident skill and operator guide from the existing template
+- [x] 16-03-PLAN.md — Add privacy-gated grounded solution proposal synthesis over QueryResult
+- [x] 16-04-PLAN.md — Add immediate feedback, actual-resolution, and pending knowledge-proposal artifact helpers
+- [x] 16-05-PLAN.md — Wire the route-first incident CLI plus feedback/resolution/proposal commands and workflow docs
 
 ---
 *Last updated: 2026-05-11 after adding Phase 16 operational skill and learning loop*
