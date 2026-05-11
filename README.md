@@ -18,6 +18,10 @@ uv run pytest -q
 
 ## Core RAG usage
 
+## OOD RAG Skill
+
+Der installierbare projektlokale Skill liegt unter `.claude/skills/ood-agent-rag/SKILL.md` und nutzt die CLI statt manueller `_index.md`-Suche. Installation, Index-Aufbau und Nutzung sind in `docs/ood-rag-skill.md` dokumentiert; der Feedback-/Lernpfad steht in `docs/ood-learning-loop.md`.
+
 Build the initial local knowledge index from Markdown files under `knowledge/`:
 
 ```bash
