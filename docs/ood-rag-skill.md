@@ -31,3 +31,5 @@ uv run ood feedback <suggestion-id> --solved true --useful 5 --correct 4 --routi
 ```
 
 Für den vollständigen Lernpfad siehe `docs/ood-learning-loop.md`.
+
+Der Lernpfad nutzt zusätzlich `ood resolution` für nachträgliche Ist-Lösungen und `ood knowledge-proposal` für reviewpflichtige Knowledge-Updates.

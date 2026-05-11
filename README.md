@@ -22,6 +22,17 @@ uv run pytest -q
 
 Der installierbare projektlokale Skill liegt unter `.claude/skills/ood-agent-rag/SKILL.md` und nutzt die CLI statt manueller `_index.md`-Suche. Installation, Index-Aufbau und Nutzung sind in `docs/ood-rag-skill.md` dokumentiert; der Feedback-/Lernpfad steht in `docs/ood-learning-loop.md`.
 
+Operativer Kurzablauf:
+
+```bash
+uv run ood incident "TraceId Kafka AKHQ Ersatzgeschäft" --storage-dir data/ood-kb-storage --json
+uv run ood feedback <suggestion-id> --solved true --useful 5 --correct 4 --routing-correct true --missing-evidence "" --data-dir data
+uv run ood resolution <suggestion-id> --resolution-text "Kafka Offset neu gelesen" --resolver "Timo" --source-ticket "INC001" --data-dir data
+uv run ood knowledge-proposal <suggestion-id> --data-dir data --json
+```
+
+Knowledge-Vorschläge bleiben reviewpflichtig und werden nicht automatisch indexiert; Quellen-Commands werden nicht ausgeführt.
+
 Build the initial local knowledge index from Markdown files under `knowledge/`:
 
 ```bash
