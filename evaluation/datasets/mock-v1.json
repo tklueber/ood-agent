@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "dataset": "mock-v1",
+  "description": "Deterministic synthetic evaluation fixture for OOD Agent mock-v1 retrieval and ticket-intelligence checks. Labels stay outside indexed Markdown.",
+  "cases": [
+    {
+      "id": "mock-police-login-timeout",
+      "query": "Police MOCK-POL-1001 bricht beim Login nach 30 Sekunden ab. Was ist der nächste Schritt?",
+      "expected_sources": [
+        "ticket/mock-pol-1001.md",
+        "wiki/mock-wiki-5001.md",
+        "note/mock-note-7001.md"
+      ],
+      "forbidden_sources": [
+        "note/mock-note-7002.md",
+        "runbook/mock-run-6001.md"
+      ],
+      "expected_intent": "Problem",
+      "expected_route": "weiterleiten Policen",
+      "expected_identifiers": [
+        {"kind": "police", "value": "MOCK-POL-1001"}
+      ],
+      "expected_command_risks": [
+        {"command_contains": "Session", "risk": "grün"}
+      ],
+      "expected_uncertainties": []
+    },
+    {
+      "id": "mock-offerte-draft-stuck",
+      "query": "Offerte MOCK-OFF-2001 bleibt im Entwurf und lässt sich im Angebotsworkflow nicht speichern.",
+      "expected_sources": [
+        "ticket/mock-off-2001.md",
+        "wiki/mock-wiki-5002.md",
+        "jira_bug/mock-jira-4001.md"
+      ],
+      "forbidden_sources": [
+        "ticket/mock-pol-1001.md",
+        "runbook/mock-run-6002.md"
+      ],
+      "expected_intent": "Problem",
+      "expected_route": "weiterleiten Offerten",
+      "expected_identifiers": [
+        {"kind": "offerte", "value": "MOCK-OFF-2001"}
+      ],
+      "expected_command_risks": [],
+      "expected_uncertainties": []
+    },
+    {
+      "id": "mock-dms-versandqueue-self-solve",
+      "query": "DMS Dokumentenversand staut sich in der Versandqueue; bitte status anzeigen und Test-Job restart prüfen.",
+      "expected_sources": [
+        "servicenow_case/mock-snow-3002.md",
+        "runbook/mock-run-6001.md"
+      ],
+      "forbidden_sources": [
+        "note/mock-note-7002.md",
+        "ticket/mock-off-2001.md"
+      ],
+      "expected_intent": "Request",
+      "expected_route": "selbst lösen",
+      "expected_identifiers": [],
+      "expected_command_risks": [
+        {"command_contains": "status", "risk": "grün"},
+        {"command_contains": "restart", "risk": "orange"}
+      ],
+      "expected_uncertainties": []
+    },
+    {
+      "id": "mock-batch-delay-rueckfrage",
+      "query": "MOCK-SNOW-3001 meldet Batch-Verzögerung, aber System, Uhrzeit und Mandant fehlen.",
+      "expected_sources": [
+        "servicenow_case/mock-snow-3001.md",
+        "runbook/mock-run-6002.md"
+      ],
+      "forbidden_sources": [
+        "wiki/mock-wiki-5002.md",
+        "ticket/mock-off-2001.md"
+      ],
+      "expected_intent": "Unklar",
+      "expected_route": "Rückfrage",
+      "expected_identifiers": [],
+      "expected_command_risks": [],
+      "expected_uncertainties": [
+        "System",
+        "Uhrzeit",
+        "Mandant"
+      ]
+    }
+  ]
+}

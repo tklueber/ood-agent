@@ -1,0 +1,12 @@
+{
+  "dataset": "ood-kb-traceid-smoke",
+  "description": "Lightweight smoke case for the external Obsidian OOD-KB corpus, not the synthetic mock corpus.",
+  "cases": [
+    {
+      "id": "ood-kb-traceid-kafka-akhq-ersatzgeschaeft",
+      "query": "TraceId Kafka AKHQ Ersatzgeschäft",
+      "expected_sources": ["how-to-find-traceid-in-kafka-message.md"],
+      "notes": "Regression for prior observed rank-4 miss; expected to be run after indexing /Users/timo/obsidian/secondBrain/Arbeit/06_OOD-KB/articles."
+    }
+  ]
+}
