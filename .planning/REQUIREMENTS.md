@@ -125,13 +125,13 @@ Explicitly excluded from the current milestone.
 | GRAPH-02 | Phase 15 | Complete |
 | KNW-11 | Phase 15 | Complete |
 | KNW-12 | Phase 15 | Complete |
-| SKILL-01 | Phase 16 | Planned |
-| SKILL-02 | Phase 16 | Planned |
-| LLM-02 | Phase 16 | Planned |
-| ROUTE-01 | Phase 16 | Planned |
-| FB-02 | Phase 16 | Planned |
-| LEARN-02 | Phase 16 | Planned |
-| KNW-13 | Phase 16 | Planned |
+| SKILL-01 | Phase 16 | Complete |
+| SKILL-02 | Phase 16 | Complete |
+| LLM-02 | Phase 16 | Complete |
+| ROUTE-01 | Phase 16 | Complete |
+| FB-02 | Phase 16 | Complete |
+| LEARN-02 | Phase 16 | Complete |
+| KNW-13 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 20 total

@@ -25,5 +25,5 @@ htmlcov/
 # Runtime data and persisted indexes
 data/
 
-# Local GSD planning artifacts
-.planning/
+# Local GSD planning artifacts - now tracked in Git
+# .planning/

@@ -20,7 +20,7 @@ uv run pytest -q
 
 ## OOD RAG Skill
 
-Der installierbare projektlokale Skill liegt unter `.claude/skills/ood-agent-rag/SKILL.md` und nutzt die CLI statt manueller `_index.md`-Suche. Installation, Index-Aufbau und Nutzung sind in `docs/ood-rag-skill.md` dokumentiert; der Feedback-/Lernpfad steht in `docs/ood-learning-loop.md`.
+Der installierbare projektlokale Skill liegt unter `.claude/skills/ood-agent-rag/SKILL.md` und nutzt die CLI statt manueller `_index.md`-Suche. Installation, Index-Aufbau und Nutzung sind in `docs/ood-rag-skill.md` dokumentiert; der Feedback-/Lernpfad steht in `docs/ood-learning-loop.md`. Die vollstaendige deutsche Dokumentation der Phase-16-Umsetzung steht in `docs/phase-16-umsetzung.md`.
 
 Operativer Kurzablauf:
 
@@ -32,6 +32,8 @@ uv run ood knowledge-proposal <suggestion-id> --data-dir data --json
 ```
 
 Knowledge-Vorschläge bleiben reviewpflichtig und werden nicht automatisch indexiert; Quellen-Commands werden nicht ausgeführt.
+
+Phase 16 ergaenzt dafuer die Kommandos `ood incident`, `ood feedback`, `ood resolution` und `ood knowledge-proposal`. `ood incident` prueft Forwarding-Faelle vor RAG und Cloud-LLM-Synthese; PKV/KMU-Weiterleitungen werden ohne RAG-Abfrage beendet, OOD-/MF-Faelle laufen weiter in Retrieval und Vorschlagssynthese.
 
 Build the initial local knowledge index from Markdown files under `knowledge/`:
 
